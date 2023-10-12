@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Collaborative Drawing Tool</title>
+</head>
+<body>
+    <!-- Create Room Section -->
+    <div>
+        <h3>Create a Room</h3>
+        <input type="text" id="createRoomName" placeholder="Enter room name">
+        <button id="createRoomBtn">Create Room</button>
+    </div>
+
+    <!-- Join Room Section -->
+    <div>
+        <h3>Join a Room</h3>
+        <input type="text" id="joinRoomName" placeholder="Enter room name">
+        <button id="joinRoomBtn">Join Room</button>
+    </div>
+
+    <!-- Canvas for Drawing -->
+    <canvas id="drawingCanvas" width="800" height="600" style="border: 1px solid #000;"></canvas>
+
+    <!-- Include Socket.io (ensure this points to your actual Socket.io URL) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+
+    <script>
+        const socket = io.connect('http://localhost:3000'); // Replace with your server URL
+
+        let currentRoomName = undefined;
+
+        // Create a Room
+        document.getElementById('createRoomBtn').addEventListener('click', () => {
+            const roomName = document.getElementById('createRoomName').value;
+            socket.emit('createRoom', roomName);
+        });
+
+        // Join a Room
+        document.getElementById('joinRoomBtn').addEventListener('click', () => {
+            const roomName = document.getElementById('joinRoomName').value;
+            socket.emit('joinRoom', roomName);
+        });
+
+        const canvas = document.getElementById('drawingCanvas');
+        const context = canvas.getContext('2d');
+        let drawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        // Event listeners for drawing
+        canvas.addEventListener('mousedown', (e) => {
+            drawing = true;
+            [lastX, lastY] = [e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop];
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!drawing) return;
+            const x = e.clientX - canvas.offsetLeft;
+            const y = e.clientY - canvas.offsetTop;
+
+
+            // Draw on the canvas and send the data to the server
+            drawLine(lastX, lastY, x, y);
+            socket.emit('draw', { fromX: lastX, fromY: lastY, toX: x, toY: y, roomName: currentRoomName });
+
+            [lastX, lastY] = [x, y];
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            drawing = false;
+        });
+
+        // Function to draw a line on the canvas
+        function drawLine(x1, y1, x2, y2) {
+            context.beginPath();
+            context.moveTo(x1, y1);
+            context.lineTo(x2, y2);
+            context.strokeStyle = 'black';
+            context.lineWidth = 2;
+            context.stroke();
+            context.closePath();
+        }
+
+        // Socket Event Listeners
+        socket.on('draw', (data) => {
+            if (data.roomName === currentRoomName) {
+                drawLine(data.fromX, data.fromY, data.toX, data.toY);
+            }
+        });
+
+        socket.on('roomCreated', (roomName) => {
+            console.log(`room created "${roomName}"`)
+        });
+
+        socket.on('roomJoined', (roomName) => {
+            // Handle user joining a room
+            console.log(`room joined "${roomName}"`)
+            currentRoomName = roomName;
+            // You may want to clear the canvas or do other actions when switching rooms
+        });
+    </script>
+</body>
+</html>
