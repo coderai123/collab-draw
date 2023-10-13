@@ -74,6 +74,22 @@
             drawing = false;
         });
 
+        // Touch Event Listeners
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent the default touch behavior (e.g., scrolling)
+            drawing = true;
+            [lastX, lastY] = [e.touches[0].clientX - canvas.offsetLeft, e.touches[0].clientY - canvas.offsetTop];
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!drawing) return;
+            const x = e.touches[0].clientX - canvas.offsetLeft;
+            const y = e.touches[0].clientY - canvas.offsetTop;
+            drawLine(lastX, lastY, x, y);
+            [lastX, lastY] = [x, y];
+        });
+
         // Function to draw a line on the canvas
         function drawLine(x1, y1, x2, y2) {
             context.beginPath();
