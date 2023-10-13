@@ -86,7 +86,10 @@
             if (!drawing) return;
             const x = e.touches[0].clientX - canvas.offsetLeft;
             const y = e.touches[0].clientY - canvas.offsetTop;
+
             drawLine(lastX, lastY, x, y);
+            socket.emit('draw', { fromX: lastX, fromY: lastY, toX: x, toY: y, roomName: currentRoomName });
+            
             [lastX, lastY] = [x, y];
         });
 
